@@ -69,4 +69,27 @@ export class Deck {
   public drawCard(): Card | null {
     return this.deck.shift() || null;
   }
+
+  public calculateHandTotal(hand: Card[]): number {
+    let total = 0;
+    let aces = 0;
+
+    // Count all cards and track aces
+    for (const card of hand) {
+      if (card.value === "A") {
+        aces++;
+        total += 11; // Start with 11 for aces
+      } else {
+        total += card.numericValue;
+      }
+    }
+
+    // Adjust aces from 11 to 1 if total > 21
+    while (total > 21 && aces > 0) {
+      total -= 10; // Convert an ace from 11 to 1
+      aces--;
+    }
+
+    return total;
+  }
 }
