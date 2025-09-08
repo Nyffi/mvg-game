@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { Deck } from "@/lib/deck";
-import type { Card, GameState } from "@/models";
+import { GameState, User } from "@/models";
+import { rewardTokens } from "@/lib/game";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,35 +34,32 @@ export async function POST(req: NextRequest) {
     const { seed, nonce, _id, ...data } = game;
     const gameData = data as GameState;
 
-    const deck = new Deck(seed, nonce);
-    for (const _ of data.playerCards) {
-      deck.drawCard();
-    }
+    gameData.state = "finished";
 
-    const newCard = deck.drawCard() as Card;
-    if (!newCard)
+    const tokensEarned = calculatePoints(gameData.score);
+    // await db
+    //   .collection<User>("users")
+    //   .findOneAndUpdate(
+    //     { _id: gameData.userId },
+    //     { $inc: { tkn: tokensEarned } },
+    //     { upsert: true, returnDocument: "after" }
+    //   );
+
+    const result = await rewardTokens(gameData.userId, tokensEarned);
+    if (!result)
       return NextResponse.json(
-        { error: "Não foi possível tirar uma nova carta" },
+        { error: "Erro ao dar recompensa" },
         { status: 500 }
       );
 
-    gameData.playerCards.push(newCard);
-    gameData.score = deck.calculateHandTotal(gameData.playerCards);
-
-    if (gameData.score > 21) {
-      gameData.state = "bust";
-    }
-
-    await db
-      .collection("games")
-      .updateOne(
-        { _id },
-        { $set: gameData },
-        { session: client.startSession() }
-      );
-
-    return NextResponse.json({ gameData, tokensEarned: 0 }, { status: 200 });
+    return NextResponse.json({ gameData, tokensEarned }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+function calculatePoints(total: number): number {
+  if (total > 21) return 0;
+  if (total === 21) return 100;
+  return Math.floor((total / 21) * 100);
 }

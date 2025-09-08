@@ -3,13 +3,24 @@ import { type NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { Deck } from "@/lib/deck";
 import type { Card } from "@/models";
-import type { Counter } from "@/models/Counter";
+import type { Counter } from "@/models/Collections";
 import type { GameState } from "@/models/GameState";
+import { getUser } from "@/actions/user-session";
 
 const SEED = process.env.BLACKJACK_SEED;
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getUser();
+
+    if (!user)
+      return NextResponse.json(
+        { error: "Usuário não autenticado." },
+        {
+          status: 403,
+        }
+      );
+
     if (!SEED)
       return NextResponse.json({ error: "Seed não definida" }, { status: 500 });
 
@@ -46,7 +57,7 @@ export async function POST(req: NextRequest) {
     };
 
     await db.collection("games").insertOne({ ...gameState, nonce, seed: SEED });
-    return NextResponse.json(gameState, { status: 200 });
+    return NextResponse.json({ gameState }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
