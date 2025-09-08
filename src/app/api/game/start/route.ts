@@ -57,8 +57,14 @@ export async function POST(req: NextRequest) {
     };
 
     await db.collection("games").insertOne({ ...gameState, nonce, seed: SEED });
-    return NextResponse.json({ gameState }, { status: 200 });
+    return NextResponse.json(
+      { success: true, data: gameState },
+      { status: 200 }
+    );
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }

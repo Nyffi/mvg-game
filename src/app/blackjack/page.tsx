@@ -1,19 +1,34 @@
-// components/BlackjackGame.tsx
 "use client";
 
-import { useState } from "react";
-import type { Card, GameData, GameState } from "@/models";
+import { useEffect, useState } from "react";
+import type { Card, GameState } from "@/models";
+import { getUser } from "@/actions/user-session";
+import { useRouter } from "next/navigation";
+import type { JWTPayload } from "jose";
 
-interface BlackjackGameProps {
-  initialData?: GameData;
-}
-
-export default function BlackjackGame({ initialData }: BlackjackGameProps) {
-  const [gameData, setGameData] = useState<GameData | null>(
-    initialData || null
-  );
+export default function BlackjackGame() {
+  const router = useRouter();
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+
+  const [user, setUser] = useState<JWTPayload>({});
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
+  useEffect(() => {
+    (async () => {
+      const u = await getUser();
+      if (!u) {
+        router.push("/");
+        return;
+      }
+      setUser(u);
+    })();
+  }, []);
+
+  useEffect(() => {
+    console.log("Game: ", gameState);
+  }, [gameState]);
 
   const callAPI = async (endpoint: string, data: any = {}) => {
     setLoading(true);
@@ -21,11 +36,11 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
 
     try {
       const response = await fetch(`/api/game/${endpoint}`, {
-        method: "POST",
+        method: endpoint.startsWith("check") ? "GET" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: endpoint.startsWith("check") ? null : JSON.stringify(data),
       });
 
       const result = await response.json();
@@ -34,7 +49,7 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
         throw new Error(result.error || "Request failed");
       }
 
-      setGameData(result.data);
+      setGameState(result.data);
       return result.data;
     } catch (err) {
       const message = err instanceof Error ? err.message : "An error occurred";
@@ -46,18 +61,20 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
   };
 
   const startGame = () => {
-    callAPI("start", { initialCard: true });
+    callAPI(`check/${user._id}`).finally(() => console.log(gameState));
+    // console.log("Existing Game: ", gameState);
+    // callAPI("start", { userId: user._id });
   };
 
   const hit = () => {
-    if (gameData?.roundId) {
-      callAPI("hit", { roundId: gameData.roundId });
+    if (gameState?.roundId) {
+      callAPI("hit", { roundId: gameState.roundId });
     }
   };
 
   const stand = () => {
-    if (gameData?.roundId) {
-      callAPI("stand", { roundId: gameData.roundId });
+    if (gameState?.roundId) {
+      callAPI("stand", { roundId: gameState.roundId });
     }
   };
 
@@ -99,10 +116,12 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
     }
   };
 
-  const canHit = gameData?.state === "playing" && !loading;
-  const canStand = gameData?.state === "playing" && !loading;
+  const canHit = gameState?.state === "playing" && !loading;
+  const canStand = gameState?.state === "playing" && !loading;
   const canStart =
-    (!gameData || gameData.state === "bust" || gameData.state === "finished") &&
+    (!gameState ||
+      gameState.state === "bust" ||
+      gameState.state === "finished") &&
     !loading;
 
   return (
@@ -118,42 +137,42 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
       <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-600">
-            {gameData?.totalScore || 0}
+            {gameState?.score || 0}
           </div>
           <div className="text-sm text-gray-600">Total Score</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-green-600">
-            {gameData?.pointsLastRound || 0}
+            {gameState?.pointsLastRound || 0}
           </div>
           <div className="text-sm text-gray-600">Last Round</div>
         </div>
       </div>
 
       {/* Game State */}
-      {gameData && (
+      {gameState && (
         <div className="mb-6">
           <div className="text-center mb-4">
             <div
               className={`text-lg font-semibold ${getStateColor(
-                gameData.state
+                gameState.state
               )}`}
             >
-              {getStateMessage(gameData.state)}
+              {getStateMessage(gameState.state)}
             </div>
             <div className="text-3xl font-bold text-gray-800 mt-2">
-              Total: {gameData.total}
+              Total: {gameState.score}
             </div>
           </div>
 
           {/* Cards Display */}
-          {gameData.hand.length > 0 && (
+          {gameState?.playerCards?.length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-700 mb-3 text-center">
                 Your Cards
               </h3>
               <div className="flex flex-wrap justify-center gap-2">
-                {gameData.hand.map((card, index) => (
+                {gameState.playerCards.map((card, index) => (
                   <div
                     key={index}
                     className="bg-white border-2 border-gray-300 rounded-lg px-3 py-2 text-center shadow-md min-w-[60px]"
@@ -188,7 +207,7 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
-          {loading && !gameData ? "Starting..." : "Start Game"}
+          {loading && !gameState ? "Starting..." : "Start Game"}
         </button>
 
         <button
@@ -210,7 +229,7 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
-          {loading && gameData?.state === "playing" ? "Drawing..." : "Hit"}
+          {loading && gameState?.state === "playing" ? "Drawing..." : "Hit"}
         </button>
 
         <button
@@ -223,7 +242,7 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
-          {loading && gameData?.state === "playing" ? "Finishing..." : "Stand"}
+          {loading && gameState?.state === "playing" ? "Finishing..." : "Stand"}
         </button>
       </div>
 
@@ -240,10 +259,10 @@ export default function BlackjackGame({ initialData }: BlackjackGameProps) {
       </div>
 
       {/* Debug Info (remove in production) */}
-      {gameData && process.env.NODE_ENV === "development" && (
+      {gameState && process.env.NODE_ENV === "development" && (
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
-          <strong>Debug:</strong> Round {gameData.roundId} | State:{" "}
-          {gameData.state}
+          <strong>Debug:</strong> Round {gameState.roundId} | State:{" "}
+          {gameState.state}
         </div>
       )}
     </div>
