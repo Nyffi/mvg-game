@@ -48,7 +48,7 @@ export default function SearchParams() {
         onClick={() => {
           loggedIn
             ? router.push("/blackjack")
-            : router.push(`${process.env.PUBLIC_BACKEND_URL}/auth/google`);
+            : router.push(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`);
         }}
       >
         {loggedIn ? "Jogar" : "Entrar"}
