@@ -9,10 +9,12 @@ export default function BlackjackGame() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [userTkn, setUserTkn] = useState<number>(0);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
   useEffect(() => {
     callAPI("check");
+    fetchUserTkn();
   }, []);
 
   const logout = async () => {
@@ -71,6 +73,15 @@ export default function BlackjackGame() {
     }
   };
 
+  const fetchUserTkn = async () => {
+    const response = await fetch("/api/user/tkn").then((res) => res.json());
+    if (!response.success) {
+      setError(response.error);
+      return;
+    }
+    setUserTkn(response.data.tkn);
+  };
+
   const getCardDisplay = (card: Card): string => {
     const suitSymbols: Record<string, string> = {
       "♥": "♥️",
@@ -112,14 +123,14 @@ export default function BlackjackGame() {
   return (
     <div className="max-w-2xl mx-auto p-6 bg-gray-900 rounded-lg shadow-lg relative">
       <div className="absolute right-10 top-6 flex flex-col gap-2">
-        <button
+        {/* <button
           type="button"
           disabled={true}
           className="bg-gray-800 px-3 py-1 rounded-2xl cursor-pointer hover:bg-gray-700"
           onClick={() => router.push("http://localhost:4000")}
         >
           Loja
-        </button>
+        </button> */}
         <button
           type="button"
           className="bg-gray-800 px-3 py-1 rounded-2xl cursor-pointer hover:bg-gray-700"
@@ -138,10 +149,8 @@ export default function BlackjackGame() {
 
       <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-800 rounded-lg">
         <div className="text-center">
-          <div className="text-2xl font-bold text-blue-500">
-            {gameState?.score || 0}
-          </div>
-          <div className="text-sm text-gray-200">Score Total</div>
+          <div className="text-2xl font-bold text-blue-500">{userTkn || 0}</div>
+          <div className="text-sm text-gray-200">Seus TKN</div>
         </div>
         {gameState?.tknEarned && (
           <div className="text-center">
@@ -227,7 +236,10 @@ export default function BlackjackGame() {
 
         <button
           type="button"
-          onClick={stand}
+          onClick={() => {
+            stand();
+            fetchUserTkn();
+          }}
           disabled={!canStand}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
             canStand
