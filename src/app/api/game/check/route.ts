@@ -1,24 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { getUser } from "@/actions/user-session";
 
-interface Props {
-  params: Promise<{ userId: string }>;
-}
-
-export async function GET(_: NextRequest, props: Props) {
+export async function GET(_: NextRequest) {
   try {
-    const { userId } = await props.params;
-    if (!userId)
-      return NextResponse.json(
-        { error: "userId é obrigatório" },
-        { status: 400 }
-      );
+    const user = await getUser();
+    if (!user)
+      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
 
     const client = await clientPromise;
     const db = client.db("data");
 
     const game = await db.collection("games").findOne({
-      userId,
+      userId: user._id,
       state: "playing",
     });
 
@@ -28,9 +22,12 @@ export async function GET(_: NextRequest, props: Props) {
         { status: 404 }
       );
 
-    const { seed, nonce, ...data } = game;
+    const { seed, nonce, ...gameData } = game;
 
-    return NextResponse.json({ success: true, data }, { status: 200 });
+    return NextResponse.json(
+      { success: true, data: { gameData } },
+      { status: 200 }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message },

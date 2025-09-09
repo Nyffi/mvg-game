@@ -1,5 +1,6 @@
 import clientPromise from "@/lib/mongodb";
-import { User } from "@/models";
+import type { User } from "@/models";
+import { ObjectId } from "mongodb";
 
 export async function rewardTokens(userId: string, amount: number) {
   const client = await clientPromise;
@@ -8,14 +9,14 @@ export async function rewardTokens(userId: string, amount: number) {
   let success = false;
 
   await session.withTransaction(async () => {
-    const users = client.db("data").collection<User>("users");
+    const users = client.db("data").collection("users");
     const transactions = client.db("data").collection("transactions");
 
     // 1. Credita os pontos
     await users.findOneAndUpdate(
-      { _id: userId },
+      { _id: new ObjectId(userId) },
       { $inc: { tkn: amount } },
-      { session, upsert: true }
+      { session }
     );
 
     // 2. Log da transação

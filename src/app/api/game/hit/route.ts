@@ -2,9 +2,20 @@ import { type NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { Deck } from "@/lib/deck";
 import type { Card, GameState } from "@/models";
+import { getUser } from "@/actions/user-session";
 
 export async function POST(req: NextRequest) {
   try {
+    // console.log(getUser);
+    const user = await getUser();
+    if (!user)
+      return NextResponse.json(
+        { error: "Usuário não autenticado." },
+        {
+          status: 403,
+        }
+      );
+
     const { roundId } = await req.json();
     if (!roundId)
       return NextResponse.json(
@@ -62,7 +73,7 @@ export async function POST(req: NextRequest) {
       );
 
     return NextResponse.json(
-      { success: true, data: { gameData, tokensEarned: 0 } },
+      { success: true, data: { gameData: { ...gameData } } },
       { status: 200 }
     );
   } catch (error: any) {

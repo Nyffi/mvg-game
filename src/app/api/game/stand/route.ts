@@ -1,10 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { GameState, User } from "@/models";
+import type { GameState } from "@/models";
 import { rewardTokens } from "@/lib/game";
+import { getUser } from "@/actions/user-session";
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getUser();
+    if (!user)
+      return NextResponse.json(
+        { error: "Usuário não autenticado." },
+        {
+          status: 403,
+        }
+      );
+
     const { roundId } = await req.json();
     if (!roundId)
       return NextResponse.json(
@@ -34,16 +44,14 @@ export async function POST(req: NextRequest) {
     const { seed, nonce, _id, ...data } = game;
     const gameData = data as GameState;
 
-    gameData.state = "finished";
-
     const tokensEarned = calculatePoints(gameData.score);
-    // await db
-    //   .collection<User>("users")
-    //   .findOneAndUpdate(
-    //     { _id: gameData.userId },
-    //     { $inc: { tkn: tokensEarned } },
-    //     { upsert: true, returnDocument: "after" }
-    //   );
+    console.log("roundId: ", gameData.roundId);
+    await db
+      .collection("games")
+      .findOneAndUpdate(
+        { roundId: gameData.roundId },
+        { $set: { state: "finished" } }
+      );
 
     const result = await rewardTokens(gameData.userId, tokensEarned);
     if (!result)
@@ -53,7 +61,12 @@ export async function POST(req: NextRequest) {
       );
 
     return NextResponse.json(
-      { success: true, data: { gameData, tokensEarned } },
+      {
+        success: true,
+        data: {
+          gameData: { ...gameData, state: "finished", tknEarned: tokensEarned },
+        },
+      },
       { status: 200 }
     );
   } catch (error: any) {

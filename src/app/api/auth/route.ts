@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createUserSession } from "@/actions/user-session";
 
 export async function POST(req: NextRequest) {

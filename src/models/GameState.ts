@@ -6,6 +6,7 @@ export type GameState = {
   state: GameProgress;
   score: number;
   playerCards: Card[];
+  tknEarned?: number;
   createdAt: Date;
 };
 

@@ -24,13 +24,6 @@ export async function POST(req: NextRequest) {
     if (!SEED)
       return NextResponse.json({ error: "Seed não definida" }, { status: 500 });
 
-    const { userId } = await req.json();
-    if (!userId)
-      return NextResponse.json(
-        { error: "userId é obrigatório" },
-        { status: 400 }
-      );
-
     const client = await clientPromise;
     const db = client.db("data");
 
@@ -47,18 +40,18 @@ export async function POST(req: NextRequest) {
     const deck = new Deck(SEED, nonce);
     const playerInitialCard = deck.drawCard() as Card;
 
-    const gameState: GameState = {
+    const gameData: GameState = {
       roundId: randomUUID(),
-      userId,
+      userId: user._id as string,
       state: "playing",
       score: playerInitialCard.numericValue,
       playerCards: [playerInitialCard],
       createdAt: new Date(),
     };
 
-    await db.collection("games").insertOne({ ...gameState, nonce, seed: SEED });
+    await db.collection("games").insertOne({ ...gameData, nonce, seed: SEED });
     return NextResponse.json(
-      { success: true, data: gameState },
+      { success: true, data: { gameData } },
       { status: 200 }
     );
   } catch (error: any) {

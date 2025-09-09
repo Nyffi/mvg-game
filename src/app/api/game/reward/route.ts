@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 export async function POST(req: Request) {
   try {
@@ -13,14 +14,13 @@ export async function POST(req: Request) {
       const users = client.db("data").collection("users");
       const transactions = client.db("data").collection("transactions");
 
-      // 1. Credita os pontos
-      await users.updateOne(
-        { _id: userId },
-        { $inc: { points: amount } },
-        { session }
+      const userObjectId = new ObjectId(userId as string);
+
+      await users.findOneAndUpdate(
+        { _id: userObjectId },
+        { $inc: { points: amount } }
       );
 
-      // 2. Log da transação
       await transactions.insertOne(
         {
           userId,
