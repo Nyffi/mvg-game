@@ -114,6 +114,7 @@ export default function BlackjackGame() {
       <div className="absolute right-10 top-6 flex flex-col gap-2">
         <button
           type="button"
+          disabled={true}
           className="bg-gray-800 px-3 py-1 rounded-2xl cursor-pointer hover:bg-gray-700"
           onClick={() => router.push("http://localhost:4000")}
         >
