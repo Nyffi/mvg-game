@@ -74,7 +74,7 @@ export default function BlackjackGame() {
   };
 
   const fetchUserTkn = async () => {
-    const response = await fetch("/api/user/tkn").then((res) => res.json());
+    const response = await fetch("/api/balance").then((res) => res.json());
     if (!response.success) {
       setError(response.error);
       return;
