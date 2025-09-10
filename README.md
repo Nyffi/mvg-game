@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://raw.githubusercontent.com/Nyffi/mvg-game/refs/heads/main/public/bleize-dark.png" width="320" alt="Nest Logo" /></a>
+  <a href="" target="blank"><img src="https://raw.githubusercontent.com/Nyffi/mvg-game/refs/heads/main/public/bleize-dark.png" width="320" alt="Nest Logo" /></a>
 </p>
 
 Um jogo de **Blackjack (21)** feito com **Next.js**.  
