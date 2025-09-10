@@ -13,6 +13,7 @@ O projeto possui tanto a interface do jogo quanto endpoints de API para lidar co
 
 - Node.js >= 18
 - npm, yarn, pnpm ou bun
+- MongoDB
 - https://github.com/Nyffi/mvg-backend
 
 ### Passos
